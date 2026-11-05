@@ -1,0 +1,358 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/**
+ * ENUMS DO ECOSSISTEMA
+ */
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  CONSULTOR
+  CLIENTE
+}
+
+model Estado {
+  id        String   @id @default(cuid())
+  nome      String
+  uf        String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cidades  Cidade[]
+  empresas Empresa[]
+
+  @@map("estados")
+}
+
+model Cidade {
+  id        String   @id @default(cuid())
+  nome      String
+  ibge      String?  @unique
+  estadoId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  estado       Estado        @relation(fields: [estadoId], references: [id])
+  frigorificos Frigorifico[]
+  fazendas     Fazenda[]
+
+  @@map("cidades")
+}
+
+model Frigorifico {
+  id        String    @id @default(cuid())
+  nome      String
+  cnpj      String?   @unique
+  cidadeId  String
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  cidade    Cidade     @relation(fields: [cidadeId], references: [id])
+  consultas Consulta[]
+
+  @@map("frigorificos")
+}
+
+model Empresa {
+  id        String    @id @default(cuid())
+  nome      String
+  estadoId  String
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  estado    Estado     @relation(fields: [estadoId], references: [id])
+  clientes  Cliente[]
+  usuarios  User[]
+  consultas Consulta[]
+
+  @@map("empresas")
+}
+
+/**
+ * Produtor - Dono do Lote no Relatorio anual de faturamento
+ */
+model Cliente {
+  id           String    @id @default(cuid())
+  empresaId    String
+  nomeProdutor String
+  documento    String
+  ativo        Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  empresa   Empresa         @relation(fields: [empresaId], references: [id])
+  fazendas  Fazenda[]
+  grupos    GrupoWhatsapp[]
+  consultas Consulta[]      @relation("ConsultaDono")
+  usuarios  User[]
+
+  parceriasComoParceiro ConsultaParceiro[] @relation("ClienteParceiro")
+
+  @@unique([documento, empresaId])
+  @@map("clientes")
+}
+
+model Fazenda {
+  id        String    @id @default(cuid())
+  nome      String
+  clienteId String
+  cidadeId  String
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  cliente   Cliente    @relation(fields: [clienteId], references: [id])
+  cidade    Cidade     @relation(fields: [cidadeId], references: [id])
+  consultas Consulta[]
+
+  @@map("fazendas")
+}
+
+model GrupoWhatsapp {
+  id              String    @id @default(cuid())
+  clienteId       String
+  groupIdWhatsapp String    @unique
+  nomeGrupo       String
+  ativo           Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  cliente   Cliente    @relation(fields: [clienteId], references: [id])
+  consultas Consulta[] @relation("ConsultaGrupos")
+
+  @@map("grupos_whatsapp")
+}
+
+model EvolutionGrupoCache {
+  id              String   @id @default(cuid())
+  groupIdWhatsapp String   @unique
+  nomeGrupo       String
+  visivelParaVinculo  Boolean  @default(false)
+  atualizadoEm    DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@map("evolution_grupos_cache")
+}
+
+model CategoriaAnimal {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  consultas Consulta[]
+
+  @@map("categorias_animal")
+}
+
+/**
+ * 💥 CENTRAL DE IDENTIDADE
+ */
+model User {
+  id                String    @id @default(cuid())
+  empresaId         String? // Opcional apenas para SUPER_ADMIN global
+  clienteId         String? // Vinculado apenas se a role for CLIENTE
+  nome              String
+  email             String    @unique
+  senhaHash         String
+  senhaResetToken   String?   @unique
+  senhaResetExpires DateTime?
+  role              Role      @default(CONSULTOR)
+  ativo             Boolean   @default(true)
+
+  // 🔒 Prova de Autenticidade (Convite Administrativo)
+  invitedBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  emailVerifiedAt DateTime?
+  registrationIp  String?
+  activationToken String?   @unique // 🎫 Token hash único do convite
+  tokenExpires    DateTime? // ⏱️ Expiração estrita de 48h
+
+  // 🔐 Segurança de Duplo Fator (2FA TOTP Offline)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+
+  // Relacionamentos
+  empresa       Empresa?       @relation(fields: [empresaId], references: [id])
+  cliente       Cliente?       @relation(fields: [clienteId], references: [id])
+  consultas     Consulta[] // Consultas que este usuário cadastrou (se for consultor)
+  auditoriaLogs AuditoriaLog[]
+
+  // 🔑 Segurança de Sessão
+  senhaAtualizadaEm   DateTime? // invalida sessões antigas após troca de senha
+  consultasCanceladas Consulta[] @relation("ConsultasCanceladas")
+
+  @@map("users")
+}
+
+/**
+ * Registro  de fechamento do late de abate
+ */
+enum StatusConsulta {
+  ENVIADA
+  CANCELADA
+}
+
+model Consulta {
+  id                String   @id @default(cuid())
+  empresaId         String
+  clienteId         String
+  fazendaId         String
+  consultorId       String // Continua apontando para o id do usuário que realizou o abate
+  frigorificoId     String
+  categoriaAnimalId String
+  dataAbate         DateTime
+
+  qtdAnimais      Int    @default(0)
+  sexoAnimais     String
+  pesoVivoKg      Float
+  pesoTotalLoteKg Float
+  pesoCarcacaKg   Float
+  mediaArroba     Float
+  rcPercentual    Float
+
+  dentes0 Int @default(0)
+  dentes2 Int @default(0)
+  dentes4 Int @default(0)
+  dentes6 Int @default(0)
+  dentes8 Int @default(0)
+
+  dentes0Pct Float @default(0)
+  dentes2Pct Float @default(0)
+  dentes4Pct Float @default(0)
+  dentes6Pct Float @default(0)
+  dentes8Pct Float @default(0)
+
+  gordura1 Int @default(0)
+  gordura2 Int @default(0)
+  gordura3 Int @default(0)
+  gordura4 Int @default(0)
+  gordura5 Int @default(0)
+
+  gordura1Pct Float @default(0)
+  gordura2Pct Float @default(0)
+  gordura3Pct Float @default(0)
+  gordura4Pct Float @default(0)
+  gordura5Pct Float @default(0)
+
+  penalizacoes     String?
+  dif              String?
+  escoreRuminal    String?
+  perdaVacinalKg   Float?
+  bezerrosP        Int     @default(0)
+  bezerrosM        Int     @default(0)
+  bezerrosG        Int     @default(0)
+  contaminacaoGiKg Float?
+  hematomasKg      Float?
+
+  deslocamento    Boolean   @default(false)
+  relatorioAbate  Boolean   @default(false)
+  dataFaturamento DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresa         Empresa             @relation(fields: [empresaId], references: [id])
+  cliente         Cliente             @relation("ConsultaDono", fields: [clienteId], references: [id])
+  fazenda         Fazenda             @relation(fields: [fazendaId], references: [id])
+  consultor       User                @relation(fields: [consultorId], references: [id]) // 💥 Alterado para User
+  frigorifico     Frigorifico         @relation(fields: [frigorificoId], references: [id])
+  categoriaAnimal CategoriaAnimal     @relation(fields: [categoriaAnimalId], references: [id])
+  financeiro      ConsultaFinanceiro?
+  whatsappLogs    WhatsAppLog[]
+  auditoriaLogs   AuditoriaLog[]
+
+  status             StatusConsulta @default(ENVIADA)
+  canceladoPor       String? // userId de quem cancelou
+  canceladoEm        DateTime?
+  motivoCancelamento String?
+  deletedAt          DateTime?
+
+  gruposNotificados   GrupoWhatsapp[]    @relation("ConsultaGrupos")
+  canceladoPorUsuario User?              @relation("ConsultasCanceladas", fields: [canceladoPor], references: [id])
+  parceiros           ConsultaParceiro[] @relation("ConsultaDoParceiro")
+
+  @@map("consultas")
+}
+
+/**
+ * Parceria de notificação entre clientes num mesmo lote.
+ * Ex: lote fiscal é do Tiago, mas o Jorge participa como parceiro
+ * e também deve ser notificado no grupo dele.
+ * Não trata rateio financeiro/sociedade — apenas visibilidade/notificação.
+ */
+model ConsultaParceiro {
+  id         String   @id @default(cuid())
+  consultaId String
+  clienteId  String
+  createdAt  DateTime @default(now())
+
+  consulta Consulta @relation("ConsultaDoParceiro", fields: [consultaId], references: [id], onDelete: Cascade)
+  cliente  Cliente  @relation("ClienteParceiro", fields: [clienteId], references: [id], onDelete: Restrict)
+
+  @@unique([consultaId, clienteId])
+  @@map("consulta_parceiros")
+}
+
+model ConsultaFinanceiro {
+  id            String   @id @default(cuid())
+  consultaId    String   @unique
+  valorUnitario Float
+  totalBruto    Float
+  nota          Float?
+  totalLiquido  Float?
+  ticketMedio   Float?
+  meses         Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  consulta Consulta @relation(fields: [consultaId], references: [id])
+
+  @@map("consulta_financeiro")
+}
+
+model WhatsAppLog {
+  id         String   @id @default(cuid())
+  consultaId String
+  status     String
+  messageId  String?
+  erro       String?
+  sentAt     DateTime @default(now())
+
+  consulta Consulta @relation(fields: [consultaId], references: [id])
+
+  @@map("whatsapp_logs")
+}
+
+model AuditoriaLog {
+  id            String   @id @default(cuid())
+  usuarioId     String? // 💥 Alterado de consultorId para usuarioId geral
+  consultaId    String?
+  tabelaAfetada String
+  registroId    String
+  acao          String
+  dadosAntes    Json?
+  dadosDepois   Json?
+  ipOrigem      String?
+  createdAt     DateTime @default(now())
+
+  usuario  User?     @relation(fields: [usuarioId], references: [id]) // 💥 Relacionamento com User
+  consulta Consulta? @relation(fields: [consultaId], references: [id])
+
+  @@map("auditoria_logs")
+}
