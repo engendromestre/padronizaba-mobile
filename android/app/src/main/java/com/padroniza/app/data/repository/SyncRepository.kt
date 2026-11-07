@@ -91,4 +91,5 @@ class SyncRepository(context: Context) {
     fun listarClientes(): Flow<List<ClienteEntity>> = dadosApoioDao.listarClientes()
     fun listarFazendasDoCliente(clienteId: String): Flow<List<FazendaEntity>> = dadosApoioDao.listarFazendasDoCliente(clienteId)
     fun listarGruposDoCliente(clienteId: String): Flow<List<GrupoWhatsappEntity>> = dadosApoioDao.listarGruposDoCliente(clienteId)
+    fun listarTodosGrupos(): Flow<List<GrupoWhatsappEntity>> = dadosApoioDao.listarTodosGrupos()
 }

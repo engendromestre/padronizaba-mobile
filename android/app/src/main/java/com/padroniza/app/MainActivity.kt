@@ -65,6 +65,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }.collectAsState(initial = emptyList())
 
+                val todosOsGrupos by syncRepository.listarTodosGrupos().collectAsState(initial = emptyList())
+
                 when (telaAtual) {
                     TelaAtual.LOGIN -> {
                         LoginScreen(
@@ -120,7 +122,7 @@ class MainActivity : ComponentActivity() {
                             categorias = categorias,
                             clientes = clientes,
                             fazendasDoCliente = fazendas,
-                            gruposDoCliente = grupos,
+                            todosOsGrupos = todosOsGrupos,
                             onCarregarFazendasEGrupos = { clienteId ->
                                 selectedClienteIdParaFazendas = clienteId
                             },
@@ -132,7 +134,6 @@ class MainActivity : ComponentActivity() {
                                         "Abate gravado localmente! Sincronizando com a central...",
                                         Toast.LENGTH_LONG
                                     ).show()
-                                    telaAtual = TelaAtual.DASHBOARD
                                 }
                             },
                             onVoltar = { telaAtual = TelaAtual.DASHBOARD }

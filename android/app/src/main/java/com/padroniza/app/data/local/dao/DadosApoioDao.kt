@@ -56,6 +56,9 @@ interface DadosApoioDao {
     suspend fun limparFazendas()
 
     // --- Grupos de WhatsApp ---
+    @Query("SELECT * FROM grupos_whatsapp ORDER BY nomeGrupo ASC")
+    fun listarTodosGrupos(): Flow<List<GrupoWhatsappEntity>>
+
     @Query("SELECT * FROM grupos_whatsapp WHERE clienteId = :clienteId ORDER BY nomeGrupo ASC")
     fun listarGruposDoCliente(clienteId: String): Flow<List<GrupoWhatsappEntity>>
 
