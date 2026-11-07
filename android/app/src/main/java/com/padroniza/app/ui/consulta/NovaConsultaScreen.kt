@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.padroniza.app.data.local.entities.*
 import com.padroniza.app.data.repository.ConsultaRepository
 import com.padroniza.app.ui.theme.*
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +81,8 @@ fun NovaConsultaScreen(
     val pTotal = pesoTotalLoteTexto.toDoubleOrNull() ?: 0.0
     val pCarcaca = pesoCarcacaTexto.toDoubleOrNull() ?: 0.0
 
-    val repo = remember { ConsultaRepository(androidx.compose.ui.platform.LocalContext.current) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val repo = remember(context) { ConsultaRepository(context) }
     val metricas = remember(qtdInt, pTotal, pVivo, d0, d2, d4, d6, d8, g1, g2, g3, g4, g5) {
         repo.calcularMetricas(qtdInt, pTotal, pVivo, d0, d2, d4, d6, d8, g1, g2, g3, g4, g5)
     }

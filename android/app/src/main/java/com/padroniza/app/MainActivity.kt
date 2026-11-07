@@ -47,17 +47,23 @@ class MainActivity : ComponentActivity() {
                 val clientes by syncRepository.listarClientes().collectAsState(initial = emptyList())
 
                 var selectedClienteIdParaFazendas by remember { mutableStateOf<String?>(null) }
-                val fazendas by (if (selectedClienteIdParaFazendas != null) {
-                    syncRepository.listarFazendasDoCliente(selectedClienteIdParaFazendas!)
-                } else {
-                    remember { kotlinx.coroutines.flow.flowOf(emptyList<FazendaEntity>()) }
-                }).collectAsState(initial = emptyList())
+                val clienteIdSelecionado = selectedClienteIdParaFazendas
 
-                val grupos by (if (selectedClienteIdParaFazendas != null) {
-                    syncRepository.listarGruposDoCliente(selectedClienteIdParaFazendas!)
-                } else {
-                    remember { kotlinx.coroutines.flow.flowOf(emptyList<GrupoWhatsappEntity>()) }
-                }).collectAsState(initial = emptyList())
+                val fazendas by remember(clienteIdSelecionado) {
+                    if (clienteIdSelecionado != null) {
+                        syncRepository.listarFazendasDoCliente(clienteIdSelecionado)
+                    } else {
+                        kotlinx.coroutines.flow.flowOf(emptyList<FazendaEntity>())
+                    }
+                }.collectAsState(initial = emptyList())
+
+                val grupos by remember(clienteIdSelecionado) {
+                    if (clienteIdSelecionado != null) {
+                        syncRepository.listarGruposDoCliente(clienteIdSelecionado)
+                    } else {
+                        kotlinx.coroutines.flow.flowOf(emptyList<GrupoWhatsappEntity>())
+                    }
+                }.collectAsState(initial = emptyList())
 
                 when (telaAtual) {
                     TelaAtual.LOGIN -> {

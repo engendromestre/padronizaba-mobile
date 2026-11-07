@@ -13,7 +13,7 @@ object RetrofitClient {
 
     // URL do backend em produção ou desenvolvimento
     // Dica para emulador Android local: "http://10.0.2.2:3000/"
-    var BASE_URL = "https://padronizaba.com.br/"
+    var BASE_URL = "http://10.0.2.2:3000/"
 
     private var apiService: PadronizaApiService? = null
 

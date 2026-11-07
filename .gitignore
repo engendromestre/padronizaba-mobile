@@ -54,3 +54,11 @@ src/generated/
 
 # postgres data (volume local de desenvolvimento/produção)
 postgres-data/
+
+
+# Android
+android/.gradle/
+android/**/build/
+android/local.properties
+android/*.hprof
+android/.idea/
