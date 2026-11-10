@@ -100,8 +100,9 @@ fun Etapa1IdentificacaoView(
         gruposComDono.filter { (grp, _) -> selectedGruposIds.contains(grp.id) }
     }
 
-    val gruposDisponiveisParaParceria = remember(selectedGruposIds, gruposComDono) {
-        gruposComDono.filter { (grp, _) -> !selectedGruposIds.contains(grp.id) }
+    // Grupos de parcerias disponíveis: apenas grupos de outros produtores que ainda não foram selecionados
+    val gruposDisponiveisParaParceria = remember(selectedGruposIds, gruposComDono, selectedClienteId) {
+        gruposComDono.filter { (grp, _) -> grp.clienteId != selectedClienteId && !selectedGruposIds.contains(grp.id) }
     }
 
     Column(
@@ -276,35 +277,79 @@ fun Etapa1IdentificacaoView(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    cardsGruposParaExibir.forEach { (grupo, _) ->
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = PadronizaRed.copy(alpha = 0.08f),
-                            border = BorderStroke(1.dp, PadronizaRed.copy(alpha = 0.35f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    cardsGruposParaExibir.forEach { (grupo, dono) ->
+                        val isGrupoDoCliente = (grupo.clienteId == selectedClienteId)
+
+                        if (isGrupoDoCliente) {
+                            // Grupo Oficial do Produtor: FIXADO (não pode ser removido)
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = PadronizaRed.copy(alpha = 0.10f),
+                                border = BorderStroke(1.dp, PadronizaRed.copy(alpha = 0.45f))
                             ) {
-                                Text(
-                                    text = grupo.nomeGrupo,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
-                                )
-                                IconButton(
-                                    onClick = {
-                                        onGruposChanged(selectedGruposIds.filter { it != grupo.id })
-                                    },
-                                    modifier = Modifier.size(24.dp)
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Remover",
-                                        tint = PadronizaRed,
-                                        modifier = Modifier.size(16.dp)
+                                    Text(
+                                        text = grupo.nomeGrupo,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PadronizaRed
                                     )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = PadronizaRed.copy(alpha = 0.18f)
+                                    ) {
+                                        Text(
+                                            text = "Fixado",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = PadronizaRed,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // Grupo Parceiro: pode ser removido se adicionado por engano
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = SurfaceLight,
+                                border = BorderStroke(1.dp, BorderLight)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = grupo.nomeGrupo,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = TextPrimary
+                                        )
+                                        Text(
+                                            text = "Parceria: $dono",
+                                            fontSize = 9.sp,
+                                            color = TextSecondary
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            onGruposChanged(selectedGruposIds.filter { it != grupo.id })
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remover parceiro",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

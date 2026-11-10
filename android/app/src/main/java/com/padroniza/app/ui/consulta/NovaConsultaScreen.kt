@@ -505,9 +505,16 @@ fun NovaConsultaScreen(
                             errosValidacao = errosValidacao - "categoriaAnimalId"
                             if (errosValidacao.isEmpty()) erroGeral = null
                         },
-                        onGruposChanged = {
-                            selectedGruposIds = it
-                            if (it.isNotEmpty()) {
+                        onGruposChanged = { novosGrupos ->
+                            // Garante que o grupo oficial do produtor selecionado continue sempre fixado
+                            val grupoDoProdutor = todosOsGrupos.find { it.clienteId == selectedClienteId }?.id
+                            val gruposComFixo = if (grupoDoProdutor != null && !novosGrupos.contains(grupoDoProdutor)) {
+                                listOf(grupoDoProdutor) + novosGrupos
+                            } else {
+                                novosGrupos
+                            }
+                            selectedGruposIds = gruposComFixo
+                            if (gruposComFixo.isNotEmpty()) {
                                 errosValidacao = errosValidacao - "grupoWhatsappId"
                                 if (errosValidacao.isEmpty()) erroGeral = null
                             }
