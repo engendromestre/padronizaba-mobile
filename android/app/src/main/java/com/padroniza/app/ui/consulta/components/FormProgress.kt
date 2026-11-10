@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.padroniza.app.ui.theme.BorderLight
 import com.padroniza.app.ui.theme.PadronizaRed
-import com.padroniza.app.ui.theme.TextPrimary
 import com.padroniza.app.ui.theme.TextSecondary
 
 @Composable
@@ -86,7 +88,7 @@ fun FormProgress(
 
                 Box(
                     modifier = Modifier
-                        .size(18.dp)
+                        .size(20.dp)
                         .clip(CircleShape)
                         .background(
                             when {
@@ -100,23 +102,23 @@ fun FormProgress(
                     if (isCurrent) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(9.dp)
                                 .clip(CircleShape)
                                 .background(PadronizaRed)
                         )
                     } else if (isDone) {
-                        Text(
-                            text = "✓",
-                            color = Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Etapa $step concluída",
+                            tint = Color.White,
+                            modifier = Modifier.size(13.dp)
                         )
                     } else {
                         Text(
                             text = "$step",
                             color = TextSecondary,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }

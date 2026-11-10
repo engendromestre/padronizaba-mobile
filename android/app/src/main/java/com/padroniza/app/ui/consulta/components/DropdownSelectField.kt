@@ -69,7 +69,7 @@ fun DropdownSelectField(
                     shape = RoundedCornerShape(16.dp)
                 )
                 .clickable(enabled = enabled) { showDialog = true }
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 14.dp, vertical = 11.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

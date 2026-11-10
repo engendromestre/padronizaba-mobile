@@ -1,6 +1,8 @@
 package com.padroniza.app.ui.consulta
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +63,7 @@ fun NovaConsultaScreen(
     var selectedCategoriaId by remember { mutableStateOf<String?>(null) }
     var selectedGruposIds by remember { mutableStateOf<List<String>>(emptyList()) }
     var dataAbate by remember {
-        mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()))
+        mutableStateOf(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date()))
     }
 
     // --- ETAPA 2: Pesos ---
@@ -122,6 +126,8 @@ fun NovaConsultaScreen(
                 }
                 if (dataAbate.isBlank()) {
                     novosErros["dataAbate"] = "Informe a data do abate"
+                } else if (!isDataValida(dataAbate)) {
+                    novosErros["dataAbate"] = "Data inválida (use DD/MM/AAAA)"
                 }
             }
 
@@ -218,6 +224,7 @@ fun NovaConsultaScreen(
         bezerrosGTexto = "0"
         deslocamento = false
         relatorioAbate = false
+        dataAbate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
 
         consultaSalvaParaResumo = null
         salvoOffline = false
@@ -267,7 +274,7 @@ fun NovaConsultaScreen(
             frigorificoNome = frigorifico?.nome ?: "Frigorífico",
             categoriaAnimalId = selectedCategoriaId ?: "",
             categoriaNome = categoria?.nome ?: "Bovino",
-            dataAbate = dataAbate,
+            dataAbate = converterDataBrParaIso(dataAbate),
             gruposWhatsappIds = selectedGruposIds.joinToString(","),
             qtdAnimais = qtd,
             sexoLote = sexoLote,
@@ -334,13 +341,15 @@ fun NovaConsultaScreen(
         bottomBar = {
             Surface(
                 color = SurfaceLight,
-                shadowElevation = 12.dp,
+                shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, BorderLight.copy(alpha = 0.8f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     if (etapaAtual == 6) {
                         Button(
@@ -349,7 +358,7 @@ fun NovaConsultaScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = PadronizaRed),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(52.dp)
+                                .height(50.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -370,7 +379,7 @@ fun NovaConsultaScreen(
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(52.dp)
+                                        .height(50.dp)
                                 ) {
                                     Text("Voltar", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                                 }
@@ -383,7 +392,7 @@ fun NovaConsultaScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = PadronizaRed),
                                     modifier = Modifier
                                         .weight(if (etapaAtual > 1) 1.2f else 1f)
-                                        .height(52.dp)
+                                        .height(50.dp)
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -400,7 +409,7 @@ fun NovaConsultaScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
                                     modifier = Modifier
                                         .weight(if (etapaAtual > 1) 1.2f else 1f)
-                                        .height(52.dp)
+                                        .height(50.dp)
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -423,8 +432,8 @@ fun NovaConsultaScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Barra de Progresso Visual
             FormProgress(etapaAtual = etapaAtual, totalEtapas = 6)
@@ -467,21 +476,49 @@ fun NovaConsultaScreen(
                         onClienteChanged = { novoClienteId ->
                             selectedClienteId = novoClienteId
                             selectedFazendaId = null
+                            errosValidacao = errosValidacao - "clienteId" - "fazendaId"
+                            if (errosValidacao.isEmpty()) erroGeral = null
                             onCarregarFazendasEGrupos(novoClienteId)
 
                             // Regra do Web: Auto-seleção do primeiro grupo do cliente
                             val gruposDoNovoCliente = todosOsGrupos.filter { it.clienteId == novoClienteId }
                             if (gruposDoNovoCliente.isNotEmpty()) {
                                 selectedGruposIds = listOf(gruposDoNovoCliente.first().id)
+                                errosValidacao = errosValidacao - "grupoWhatsappId"
+                                if (errosValidacao.isEmpty()) erroGeral = null
                             } else {
                                 selectedGruposIds = emptyList()
                             }
                         },
-                        onFazendaChanged = { selectedFazendaId = it },
-                        onFrigorificoChanged = { selectedFrigorificoId = it },
-                        onCategoriaChanged = { selectedCategoriaId = it },
-                        onGruposChanged = { selectedGruposIds = it },
-                        onDataAbateChanged = { dataAbate = it }
+                        onFazendaChanged = {
+                            selectedFazendaId = it
+                            errosValidacao = errosValidacao - "fazendaId"
+                            if (errosValidacao.isEmpty()) erroGeral = null
+                        },
+                        onFrigorificoChanged = {
+                            selectedFrigorificoId = it
+                            errosValidacao = errosValidacao - "frigorificoId"
+                            if (errosValidacao.isEmpty()) erroGeral = null
+                        },
+                        onCategoriaChanged = {
+                            selectedCategoriaId = it
+                            errosValidacao = errosValidacao - "categoriaAnimalId"
+                            if (errosValidacao.isEmpty()) erroGeral = null
+                        },
+                        onGruposChanged = {
+                            selectedGruposIds = it
+                            if (it.isNotEmpty()) {
+                                errosValidacao = errosValidacao - "grupoWhatsappId"
+                                if (errosValidacao.isEmpty()) erroGeral = null
+                            }
+                        },
+                        onDataAbateChanged = {
+                            dataAbate = it
+                            if (it.isNotBlank()) {
+                                errosValidacao = errosValidacao - "dataAbate"
+                                if (errosValidacao.isEmpty()) erroGeral = null
+                            }
+                        }
                     )
                 }
 
@@ -573,6 +610,40 @@ fun NovaConsultaScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+private fun converterDataBrParaIso(dataBr: String): String {
+    if (dataBr.matches(Regex("""^\d{4}-\d{2}-\d{2}$"""))) return dataBr
+    val partes = dataBr.split("/")
+    if (partes.size == 3) {
+        val dia = partes[0].padStart(2, '0')
+        val mes = partes[1].padStart(2, '0')
+        val ano = partes[2]
+        return "$ano-$mes-$dia"
+    }
+    return dataBr
+}
+
+private fun isDataValida(data: String): Boolean {
+    val regex = Regex("""^(\d{2})/(\d{2})/(\d{4})$""")
+    val match = regex.matchEntire(data) ?: return false
+    val (diaStr, mesStr, anoStr) = match.destructured
+    val dia = diaStr.toIntOrNull() ?: return false
+    val mes = mesStr.toIntOrNull() ?: return false
+    val ano = anoStr.toIntOrNull() ?: return false
+
+    if (ano !in 1900..2100 || mes !in 1..12 || dia !in 1..31) return false
+
+    return try {
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply {
+            isLenient = false
+        }
+        sdf.parse(data) != null
+    } catch (_: Exception) {
+        false
     }
 }

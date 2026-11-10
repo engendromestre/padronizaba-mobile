@@ -13,6 +13,7 @@ import com.padroniza.app.ui.consulta.NovaConsultaScreen
 import com.padroniza.app.ui.dashboard.DashboardScreen
 import com.padroniza.app.ui.login.LoginScreen
 import com.padroniza.app.ui.theme.PadronizaTheme
+import com.padroniza.app.worker.SyncManager
 import kotlinx.coroutines.launch
 
 enum class TelaAtual {
@@ -98,9 +99,12 @@ class MainActivity : ComponentActivity() {
                             onSincronizarManual = {
                                 scope.launch {
                                     Toast.makeText(this@MainActivity, "Sincronizando...", Toast.LENGTH_SHORT).show()
+                                    // 1. Atualiza dados de apoio
                                     val res = syncRepository.sincronizarCatalogo()
+                                    // 2. Dispara upload de consultas pendentes
+                                    SyncManager.agendarUploadImediato(this@MainActivity)
                                     res.onSuccess {
-                                        Toast.makeText(this@MainActivity, "Catálogo atualizado!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(this@MainActivity, "Sincronização concluída!", Toast.LENGTH_SHORT).show()
                                     }.onFailure {
                                         Toast.makeText(this@MainActivity, "Falha na sincronização: ${it.message}", Toast.LENGTH_SHORT).show()
                                     }
