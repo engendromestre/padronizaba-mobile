@@ -26,14 +26,14 @@ jobs:
   # ── Etapa 1: Qualidade de código ───────────────────────────────────
   quality:
     name: Lint & Types
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js Cache
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -51,7 +51,7 @@ jobs:
   # ── Etapa 2: Testes unitários (Só roda se a qualidade passar) ──────
   unit:
     name: Unit Tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: quality
     services:
       postgres:
@@ -75,7 +75,7 @@ jobs:
       - name: Setup Node.js Cache
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -90,8 +90,8 @@ jobs:
   # ── Etapa 3: Testes E2E (Só roda se o Unit passar - protege a CPU) ──
   e2e:
     name: E2E Tests
-    runs-on: self-hosted
-    needs: unit # <--- Força a sequência para poupar sua 1 CPU
+    runs-on: ubuntu-latest
+    needs: unit
     services:
       postgres:
         image: postgres:16
@@ -114,7 +114,7 @@ jobs:
       - name: Setup Node.js Cache
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -157,7 +157,7 @@ jobs:
   # ── Etapa 4: Build Check (Só roda se os testes passarem) ───────────
   build:
     name: Build Check
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: e2e
     env:
       DATABASE_URL: postgresql://padronizaba:padronizaba@localhost:5433/padronizaba_test
@@ -173,7 +173,7 @@ jobs:
       - name: Setup Node.js Cache
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
