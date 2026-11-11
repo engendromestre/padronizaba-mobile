@@ -43,6 +43,7 @@ fun NovaConsultaScreen(
     clientes: List<ClienteEntity>,
     fazendasDoCliente: List<FazendaEntity>,
     todosOsGrupos: List<GrupoWhatsappEntity>,
+    consultaInicial: ConsultaEntity? = null,
     onCarregarFazendasEGrupos: (String) -> Unit,
     onSalvarConsulta: (ConsultaEntity) -> Unit,
     onVoltar: () -> Unit
@@ -56,50 +57,74 @@ fun NovaConsultaScreen(
     var erroGeral by remember { mutableStateOf<String?>(null) }
     var errosValidacao by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
+    LaunchedEffect(consultaInicial) {
+        if (consultaInicial?.clienteId?.isNotBlank() == true) {
+            onCarregarFazendasEGrupos(consultaInicial.clienteId)
+        }
+    }
+
     // --- ETAPA 1: Identificação ---
-    var selectedClienteId by remember { mutableStateOf<String?>(null) }
-    var selectedFazendaId by remember { mutableStateOf<String?>(null) }
-    var selectedFrigorificoId by remember { mutableStateOf<String?>(null) }
-    var selectedCategoriaId by remember { mutableStateOf<String?>(null) }
-    var selectedGruposIds by remember { mutableStateOf<List<String>>(emptyList()) }
-    var dataAbate by remember {
-        mutableStateOf(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date()))
+    var selectedClienteId by remember(consultaInicial) { mutableStateOf(consultaInicial?.clienteId?.ifBlank { null }) }
+    var selectedFazendaId by remember(consultaInicial) { mutableStateOf(consultaInicial?.fazendaId?.ifBlank { null }) }
+    var selectedFrigorificoId by remember(consultaInicial) { mutableStateOf(consultaInicial?.frigorificoId?.ifBlank { null }) }
+    var selectedCategoriaId by remember(consultaInicial) { mutableStateOf(consultaInicial?.categoriaAnimalId?.ifBlank { null }) }
+    var selectedGruposIds by remember(consultaInicial) {
+        mutableStateOf(
+            consultaInicial?.gruposWhatsappIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+        )
+    }
+    var dataAbate by remember(consultaInicial) {
+        mutableStateOf(
+            if (consultaInicial != null && consultaInicial.dataAbate.isNotBlank()) {
+                converterIsoParaBr(consultaInicial.dataAbate)
+            } else {
+                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+            }
+        )
     }
 
     // --- ETAPA 2: Pesos ---
-    var qtdAnimaisTexto by remember { mutableStateOf("") }
-    var sexoLote by remember { mutableStateOf("MACHO") }
-    var pesoVivoTexto by remember { mutableStateOf("") }
-    var pesoTotalLoteTexto by remember { mutableStateOf("") }
-    var pesoCarcacaTexto by remember { mutableStateOf("") }
+    var qtdAnimaisTexto by remember(consultaInicial) {
+        mutableStateOf(if (consultaInicial != null && consultaInicial.qtdAnimais > 0) consultaInicial.qtdAnimais.toString() else "")
+    }
+    var sexoLote by remember(consultaInicial) { mutableStateOf(consultaInicial?.sexoLote ?: "MACHO") }
+    var pesoVivoTexto by remember(consultaInicial) {
+        mutableStateOf(if (consultaInicial != null && consultaInicial.pesoVivoKg > 0) consultaInicial.pesoVivoKg.toString() else "")
+    }
+    var pesoTotalLoteTexto by remember(consultaInicial) {
+        mutableStateOf(if (consultaInicial != null && consultaInicial.pesoTotalLoteKg > 0) consultaInicial.pesoTotalLoteKg.toString() else "")
+    }
+    var pesoCarcacaTexto by remember(consultaInicial) {
+        mutableStateOf(if (consultaInicial != null && consultaInicial.pesoCarcacaKg > 0) consultaInicial.pesoCarcacaKg.toString() else "")
+    }
     var modoEntrada by remember { mutableStateOf("TOTAL") } // "TOTAL" ou "MEDIA"
 
     // --- ETAPA 3: Maturidade ---
-    var d0Texto by remember { mutableStateOf("0") }
-    var d2Texto by remember { mutableStateOf("0") }
-    var d4Texto by remember { mutableStateOf("0") }
-    var d6Texto by remember { mutableStateOf("0") }
-    var d8Texto by remember { mutableStateOf("0") }
+    var d0Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.dentes0?.toString() ?: "0") }
+    var d2Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.dentes2?.toString() ?: "0") }
+    var d4Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.dentes4?.toString() ?: "0") }
+    var d6Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.dentes6?.toString() ?: "0") }
+    var d8Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.dentes8?.toString() ?: "0") }
 
     // --- ETAPA 4: Acabamento ---
-    var g1Texto by remember { mutableStateOf("0") }
-    var g2Texto by remember { mutableStateOf("0") }
-    var g3Texto by remember { mutableStateOf("0") }
-    var g4Texto by remember { mutableStateOf("0") }
-    var g5Texto by remember { mutableStateOf("0") }
+    var g1Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.gordura1?.toString() ?: "0") }
+    var g2Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.gordura2?.toString() ?: "0") }
+    var g3Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.gordura3?.toString() ?: "0") }
+    var g4Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.gordura4?.toString() ?: "0") }
+    var g5Texto by remember(consultaInicial) { mutableStateOf(consultaInicial?.gordura5?.toString() ?: "0") }
 
     // --- ETAPA 5: Adicionais ---
-    var penalizacoes by remember { mutableStateOf("") }
-    var dif by remember { mutableStateOf("") }
-    var escoreRuminal by remember { mutableStateOf("") }
-    var perdaVacinalTexto by remember { mutableStateOf("") }
-    var contaminacaoGiTexto by remember { mutableStateOf("") }
-    var hematomasTexto by remember { mutableStateOf("") }
-    var bezerrosPTexto by remember { mutableStateOf("0") }
-    var bezerrosMTexto by remember { mutableStateOf("0") }
-    var bezerrosGTexto by remember { mutableStateOf("0") }
-    var deslocamento by remember { mutableStateOf(false) }
-    var relatorioAbate by remember { mutableStateOf(false) }
+    var penalizacoes by remember(consultaInicial) { mutableStateOf(consultaInicial?.penalizacoes ?: "") }
+    var dif by remember(consultaInicial) { mutableStateOf(consultaInicial?.dif ?: "") }
+    var escoreRuminal by remember(consultaInicial) { mutableStateOf(consultaInicial?.escoreRuminal ?: "") }
+    var perdaVacinalTexto by remember(consultaInicial) { mutableStateOf(consultaInicial?.perdaVacinalKg?.toString() ?: "") }
+    var contaminacaoGiTexto by remember(consultaInicial) { mutableStateOf(consultaInicial?.contaminacaoGiKg?.toString() ?: "") }
+    var hematomasTexto by remember(consultaInicial) { mutableStateOf(consultaInicial?.hematomasKg?.toString() ?: "") }
+    var bezerrosPTexto by remember(consultaInicial) { mutableStateOf(consultaInicial?.bezerrosP?.toString() ?: "0") }
+    var bezerrosMTexto by remember(consultaInicial) { mutableStateOf(consultaInicial?.bezerrosM?.toString() ?: "0") }
+    var bezerrosGTexto by remember(consultaInicial) { mutableStateOf(consultaInicial?.bezerrosG?.toString() ?: "0") }
+    var deslocamento by remember(consultaInicial) { mutableStateOf(consultaInicial?.deslocamento ?: false) }
+    var relatorioAbate by remember(consultaInicial) { mutableStateOf(consultaInicial?.relatorioAbate ?: false) }
 
     val context = LocalContext.current
     val repo = remember(context) { ConsultaRepository(context) }
@@ -265,7 +290,7 @@ fun NovaConsultaScreen(
         val categoria = categorias.find { it.id == selectedCategoriaId }
 
         val entidade = ConsultaEntity(
-            localId = UUID.randomUUID().toString(),
+            localId = consultaInicial?.localId?.ifBlank { null } ?: UUID.randomUUID().toString(),
             clienteId = selectedClienteId ?: "",
             clienteNome = cliente?.nomeProdutor ?: "Cliente",
             fazendaId = selectedFazendaId ?: "",
@@ -320,7 +345,13 @@ fun NovaConsultaScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (etapaAtual == 6) "Consulta Finalizada" else "Nova Consulta",
+                        text = if (etapaAtual == 6) {
+                            "Consulta Finalizada"
+                        } else if (consultaInicial != null) {
+                            "Editar Abate (Etapa $etapaAtual/5)"
+                        } else {
+                            "Nova Consulta (Etapa $etapaAtual/5)"
+                        },
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = TextPrimary
@@ -621,6 +652,18 @@ fun NovaConsultaScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+private fun converterIsoParaBr(dataIso: String): String {
+    if (dataIso.matches(Regex("""^\d{2}/\d{2}/\d{4}$"""))) return dataIso
+    val partes = dataIso.split("-")
+    if (partes.size == 3) {
+        val ano = partes[0]
+        val mes = partes[1].padStart(2, '0')
+        val dia = partes[2].padStart(2, '0')
+        return "$dia/$mes/$ano"
+    }
+    return dataIso
 }
 
 private fun converterDataBrParaIso(dataBr: String): String {

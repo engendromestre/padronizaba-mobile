@@ -68,6 +68,8 @@ class MainActivity : ComponentActivity() {
 
                 val todosOsGrupos by syncRepository.listarTodosGrupos().collectAsState(initial = emptyList())
 
+                var consultaEmEdicao by remember { mutableStateOf<ConsultaEntity?>(null) }
+
                 when (telaAtual) {
                     TelaAtual.LOGIN -> {
                         LoginScreen(
@@ -95,7 +97,10 @@ class MainActivity : ComponentActivity() {
                         DashboardScreen(
                             consultorNome = authRepository.obterNomeUsuario(),
                             consultas = consultas,
-                            onNovaConsulta = { telaAtual = TelaAtual.NOVA_CONSULTA },
+                            onNovaConsulta = {
+                                consultaEmEdicao = null
+                                telaAtual = TelaAtual.NOVA_CONSULTA
+                            },
                             onSincronizarManual = {
                                 scope.launch {
                                     Toast.makeText(this@MainActivity, "Sincronizando...", Toast.LENGTH_SHORT).show()
@@ -120,6 +125,10 @@ class MainActivity : ComponentActivity() {
                                     Toast.makeText(this@MainActivity, "Reenviando lote para a central...", Toast.LENGTH_SHORT).show()
                                 }
                             },
+                            onEditarConsulta = { consulta ->
+                                consultaEmEdicao = consulta
+                                telaAtual = TelaAtual.NOVA_CONSULTA
+                            },
                             onExcluirConsulta = { localId ->
                                 scope.launch {
                                     consultaRepository.excluirConsulta(localId)
@@ -142,6 +151,7 @@ class MainActivity : ComponentActivity() {
                             clientes = clientes,
                             fazendasDoCliente = fazendas,
                             todosOsGrupos = todosOsGrupos,
+                            consultaInicial = consultaEmEdicao,
                             onCarregarFazendasEGrupos = { clienteId ->
                                 selectedClienteIdParaFazendas = clienteId
                             },
@@ -155,7 +165,10 @@ class MainActivity : ComponentActivity() {
                                     ).show()
                                 }
                             },
-                            onVoltar = { telaAtual = TelaAtual.DASHBOARD }
+                            onVoltar = {
+                                consultaEmEdicao = null
+                                telaAtual = TelaAtual.DASHBOARD
+                            }
                         )
                     }
                 }
