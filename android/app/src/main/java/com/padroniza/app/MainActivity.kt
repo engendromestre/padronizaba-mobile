@@ -101,8 +101,8 @@ class MainActivity : ComponentActivity() {
                                     Toast.makeText(this@MainActivity, "Sincronizando...", Toast.LENGTH_SHORT).show()
                                     // 1. Atualiza dados de apoio
                                     val res = syncRepository.sincronizarCatalogo()
-                                    // 2. Dispara upload de consultas pendentes
-                                    SyncManager.agendarUploadImediato(this@MainActivity)
+                                    // 2. Dispara upload de consultas pendentes e falhas
+                                    consultaRepository.reenviarTodasComFalha()
                                     res.onSuccess {
                                         Toast.makeText(this@MainActivity, "Sincronização concluída!", Toast.LENGTH_SHORT).show()
                                     }.onFailure {
@@ -114,8 +114,23 @@ class MainActivity : ComponentActivity() {
                                 authRepository.logout()
                                 telaAtual = TelaAtual.LOGIN
                             },
-                            onSelecionarConsulta = { localId ->
-                                Toast.makeText(this@MainActivity, "Lote: $localId", Toast.LENGTH_SHORT).show()
+                            onReenviarConsulta = { localId ->
+                                scope.launch {
+                                    consultaRepository.reenviarConsulta(localId)
+                                    Toast.makeText(this@MainActivity, "Reenviando lote para a central...", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onExcluirConsulta = { localId ->
+                                scope.launch {
+                                    consultaRepository.excluirConsulta(localId)
+                                    Toast.makeText(this@MainActivity, "Lote excluído do aparelho.", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onReenviarTodasComFalha = {
+                                scope.launch {
+                                    consultaRepository.reenviarTodasComFalha()
+                                    Toast.makeText(this@MainActivity, "Reenviando lotes com falha...", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         )
                     }

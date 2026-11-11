@@ -39,6 +39,9 @@ interface ConsultaDao {
     @Query("UPDATE consultas SET statusEnvio = :status WHERE localId = :localId")
     suspend fun atualizarStatus(localId: String, status: StatusEnvio)
 
+    @Query("UPDATE consultas SET statusEnvio = 'PENDENTE_ENVIO' WHERE statusEnvio = 'ERRO'")
+    suspend fun marcarFalhasComoPendentes()
+
     @Query("DELETE FROM consultas WHERE localId = :localId")
     suspend fun excluirConsulta(localId: String)
 }

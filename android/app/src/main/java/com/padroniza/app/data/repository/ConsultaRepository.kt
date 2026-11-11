@@ -64,6 +64,16 @@ class ConsultaRepository(private val context: Context) {
         consultaDao.excluirConsulta(localId)
     }
 
+    suspend fun reenviarConsulta(localId: String) {
+        consultaDao.atualizarStatus(localId, StatusEnvio.PENDENTE_ENVIO)
+        SyncManager.agendarUploadImediato(context)
+    }
+
+    suspend fun reenviarTodasComFalha() {
+        consultaDao.marcarFalhasComoPendentes()
+        SyncManager.agendarUploadImediato(context)
+    }
+
     /**
      * Calcula métricas de arroba e rendimento de carcaça
      * idênticas ao backend (src/lib/schemas/consulta.ts)
